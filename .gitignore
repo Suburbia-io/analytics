@@ -121,3 +121,6 @@ data.csv
 savefile.pickle
 
 scratches/
+
+.Rproj.user
+.Rhistory
