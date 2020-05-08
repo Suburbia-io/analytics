@@ -1,0 +1,18 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.4.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+-   repo: https://github.com/timothycrosley/isort
+    rev: 8a44f151633152deaf8636956cce53498c8a5bb6
+    hooks:
+    -   id: isort
+-   repo: https://github.com/psf/black
+    rev: 7a14a37981862ef418f3cdb4a7e2375856f97529
+    hooks:
+    -   id: black
