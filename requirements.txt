@@ -4,3 +4,5 @@ click
 click_pathlib
 fbprophet
 matplotlib
+scipy
+scikit-learn
