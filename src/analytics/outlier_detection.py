@@ -7,7 +7,29 @@ from fbprophet import Prophet
 from matplotlib import pyplot as plt
 
 
-class Analyzer:
+class TimeSeriesAnalyzer:
+    """
+    Class for outlier analysis of a single time series
+
+    Parameters:
+    :param old_data: Dataframe of dates (`ds`) and metric values (`y`) to train on
+    :param new_data: Dataframe of dates (`ds`) and metric values (`y`) to test
+    :param new_daterange: Dataframe of dates (`ds`) to predict for
+    :param metadata: Dictionary with keys `dimension`, `item`, `metric`
+    :param interval_multiplier: Coefficient defining relative accepted interval width.
+        Higher = less sensitive
+
+    Attributes:
+    old_data: Dataframe of dates (`ds`) and metric values (`y`) to train on
+    new_data: Dataframe of dates (`ds`) and metric values (`y`) to test
+    new_daterange: Dataframe of dates (`ds`) to predict for
+    metadata: Dictionary with keys `dimension`, `item`, `metric`
+    interval_multiplier: Coefficient defining relative accepted interval width.
+        Higher = less sensitive
+    model: Fitted model for generating predictions
+    deviations: Dataframe of deviations of test data
+    """
+
     def __init__(
         self, old_data, new_data, new_daterange, metadata, interval_multiplier=1.5
     ):
@@ -20,6 +42,9 @@ class Analyzer:
         self.deviations = None
 
     def find_deviations(self):
+        """
+        Fit model and generate deviations Dataframe
+        """
         self.model = make_model(self.old_data)
         predictions = self.model.predict(self.new_daterange)
         self.deviations = get_deviations(
@@ -27,27 +52,49 @@ class Analyzer:
         )
 
     def check_deviations(self):
+        """
+        Check if deviations Dataframe is computed
+        """
         if not isinstance(self.deviations, pd.DataFrame):
             raise ValueError("Deviations not computed")
 
     def make_chart(self):
+        """
+        Visualize deviations in a chart
+
+        :return Matplotlib figure with a visualization
+        """
         self.check_deviations()
         return create_chart(
             self.old_data, self.new_data, self.deviations, self.metadata
         )
 
     def get_filtered_deviations(self):
+        """
+        Filter deviations -- only keep problematic dates
+
+        :return Dataframe of problematic dates and deviations
+        """
         self.check_deviations()
         return self.deviations.loc[lambda d: d["status"] != "ok"].assign(
             **self.metadata
         )[["ds", "metric", "dimension", "item", "status"]]
 
     def is_ok(self):
+        """
+        Indicate if issues were found for any date
+
+        :return: Boolean indicating if issues were found
+        """
         self.check_deviations()
         n_lines_with_issues = len(self.deviations.loc[lambda d: d["status"] != "ok"])
         return n_lines_with_issues == 0
 
     def get_summary(self):
+        """
+        Create a summary of results with metadata
+        :return Dataframe of metadata and issue indication
+        """
         return pd.DataFrame({**self.metadata, "ok": self.is_ok(),}, index=[0])
 
 
