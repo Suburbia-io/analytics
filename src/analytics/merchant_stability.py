@@ -9,6 +9,99 @@ from . import utils
 logger = logging.getLogger(__name__)
 
 
+def get_merchant_stats(
+    daily_stats: pd.DataFrame, stability_settings: Optional[Dict[str, float]] = None,
+) -> pd.DataFrame:
+    """
+    Get dataframe of stability-related statistics per merchant
+
+    :param daily_stats: Dataframe of daily aggregated merchant data (from BigQuery)
+    :param stability_settings: Dictionary with arguments to override defaults
+    of `compute_stable` (optional)
+    :return: Dataframe with statistics
+    """
+    stability_settings = stability_settings or {}
+    check_daily_stats(daily_stats)
+    daily_stats = daily_stats.assign(date=lambda d: pd.to_datetime(d["date"]))
+    activity_stats = compute_activity_stats(daily_stats)
+    volatility = compute_volatility(daily_stats)
+
+    cols_to_include = [
+        "vendor",
+        "merchant",
+        "merchant_id",
+        "lifespan",
+        "active_days",
+        "activity",
+        "volatility",
+        "longest_gap",
+        "n_lines",
+        "first_day",
+        "last_day",
+        "stable",
+    ]
+
+    return activity_stats.join(
+        volatility, how="left", on=["vendor", "merchant"],
+    ).assign(
+        stable=lambda d: compute_stable(df=d, **stability_settings),
+        merchant_id=utils.hash_merchant,
+    )[
+        cols_to_include
+    ]
+
+
+def make_stability_statistics(
+    daily_stats: pd.DataFrame, years: Optional[List[int]] = None,
+) -> pd.DataFrame:
+    """
+    Create stability statistics Dataframe by year
+
+    :param daily_stats: Daily statistics dataframe
+    :param years: List of years to compute statistics for
+    :return: Dataframe of merchant stability indicators by year
+    """
+    years = years or [2017, 2018, 2019]
+
+    stats_by_year = list()
+    for year in years:
+        logger.info(f"Computing stable merchants for year {year}")
+        stats_year = get_merchant_stats(
+            daily_stats.loc[
+                lambda d: d["date"].between(f"{year}-01-01", f"{year}-12-31")
+            ]
+        ).assign(year=year)[
+            [
+                "vendor",
+                "merchant",
+                "year",
+                "stable",
+                "lifespan",
+                "activity",
+                "volatility",
+                "longest_gap",
+            ]
+        ]
+        stats_by_year.append(stats_year)
+
+    return pd.concat(stats_by_year)
+
+
+def check_daily_stats(daily_stats: pd.DataFrame) -> None:
+    """
+    Check validity of daily statistics Dataframe
+
+    :param daily_stats: Dataframe of daily statistics
+    :raise ValueError: If dataframe misses required columns
+    """
+    required_cols = ["vendor", "merchant", "date", "n_lines"]
+    missing = [col for col in required_cols if col not in daily_stats.columns]
+    if any(missing):
+        raise ValueError(
+            f"Daily stats dataframe misses the following columns: {missing}"
+        )
+
+
 def compute_activity_stats(daily_stats: pd.DataFrame) -> pd.DataFrame:
     """
     Compute activity statistics
@@ -109,7 +202,6 @@ def compute_stable(
     minimum_activity: float = 0.67,
     maximum_volatility: float = 0.67,
     maximum_gap: int = 21,
-    **kwargs,
 ) -> np.ndarray:
     """
     Compute merchant stability from summary statistics
@@ -122,17 +214,6 @@ def compute_stable(
     :param maximum_gap: Longest allowed period of inactivity (in days). Default 21.
     :return: Numpy array of booleans indicating stability
     """
-    allowed_settings = [
-        "minimum_lifespan",
-        "minimum_activity",
-        "maximum_volatility",
-        "maximum_gap",
-    ]
-    for kwarg in kwargs.keys():
-        if kwarg not in allowed_settings:
-            raise ValueError(
-                f"Illegal argument `{kwarg}`. Allowed arguments: {allowed_settings}"
-            )
 
     adjusted_longest_gap = get_adjusted_longest_gap(df)
     return (
@@ -141,72 +222,3 @@ def compute_stable(
         & (df["volatility"] <= maximum_volatility)
         & (adjusted_longest_gap <= maximum_gap)
     )
-
-
-def get_merchant_stats(
-    daily_stats: pd.DataFrame, stability_settings: Optional[Dict[str, float]] = None,
-) -> pd.DataFrame:
-    """
-    Get dataframe of stability-related statistics per merchant
-
-    :param daily_stats: Dataframe of daily aggregated merchant data (from BigQuery)
-    :param stability_settings: Dictionary with arguments to pass to `compute_stable` (optional)
-    :return: Dataframe with statistics
-    """
-    stability_settings = stability_settings or {}
-    daily_stats = daily_stats.assign(date=lambda d: pd.to_datetime(d["date"]))
-    activity_stats = compute_activity_stats(daily_stats)
-    volatility = compute_volatility(daily_stats)
-
-    cols_to_include = [
-        "vendor",
-        "merchant",
-        "merchant_id",
-        "lifespan",
-        "active_days",
-        "activity",
-        "volatility",
-        "longest_gap",
-        "n_lines",
-        "first_day",
-        "last_day",
-        "stable",
-    ]
-
-    return activity_stats.join(
-        volatility, how="left", on=["vendor", "merchant"],
-    ).assign(
-        stable=lambda d: compute_stable(df=d, **stability_settings),
-        merchant_id=utils.hash_merchant,
-    )[
-        cols_to_include
-    ]
-
-
-def make_stability_statistics(
-    daily_stats: pd.DataFrame, years: Optional[List[int]] = None,
-) -> pd.DataFrame:
-    years = years or [2017, 2018, 2019]
-
-    stats_by_year = list()
-    for year in years:
-        logger.info(f"Computing stable merchants for year {year}")
-        stats_year = get_merchant_stats(
-            daily_stats.loc[
-                lambda d: d["date"].between(f"{year}-01-01", f"{year}-12-31")
-            ]
-        ).assign(year=year)[
-            [
-                "vendor",
-                "merchant",
-                "year",
-                "stable",
-                "lifespan",
-                "activity",
-                "volatility",
-                "longest_gap",
-            ]
-        ]
-        stats_by_year.append(stats_year)
-
-    return pd.concat(stats_by_year)
