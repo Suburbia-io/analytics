@@ -7,7 +7,7 @@ repos:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
     -   id: check-yaml
-    -   id: check-added-large-files
+#    -   id: check-added-large-files
     -   id: requirements-txt-fixer
 -   repo: https://github.com/timothycrosley/isort
     rev: 8a44f151633152deaf8636956cce53498c8a5bb6
