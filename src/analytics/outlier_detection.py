@@ -140,6 +140,17 @@ def find_new_outliers(
     return analyzers
 
 
+def _get_fit_analyzer(x):
+    """
+    Helper function for initializing and fitting TimeSeriesAnalyzer objects
+
+    :param x: Tuple of (old_data, new_data, new_daterange, metadata)
+    """
+    a = TimeSeriesAnalyzer(*x)
+    a.find_deviations()
+    return a
+
+
 def make_model(training_data):
     """
     Initialize and train Prophet model using training data
@@ -286,6 +297,15 @@ def slice_prophet(
 
 
 def create_chart(old_data, new_data, deviations, metadata):
+    """
+    Create chart of deviations given training data, test data and predictions
+
+    :param old_data: Dataframe of training data
+    :param new_data: Dataframe of test data
+    :param deviations: Dataframe of computed deviations
+    :param metadata: Dictionary of `metric`, `dimension`, `item` metadata
+    :return: Matplotlib figure
+    """
     fig, ax = plt.subplots(figsize=(15, 5))
     ax.plot(old_data.sort_values("ds")["ds"], old_data.sort_values("ds")["y"])
     ax.scatter(old_data.sort_values("ds")["ds"], old_data.sort_values("ds")["y"])
@@ -302,9 +322,3 @@ def create_chart(old_data, new_data, deviations, metadata):
     ax.set_xlim(left=old_data["ds"].max() - timedelta(days=60))
     ax.set_title(f"Predictions for {metadata['dimension']} / {metadata['item']}")
     return fig
-
-
-def _get_fit_analyzer(x):
-    a = Analyzer(*x)
-    a.find_deviations()
-    return a
