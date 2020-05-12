@@ -24,5 +24,8 @@ jobs:
     - name: Flake8
       run: |
         pip install flake8
-        flake8 analytics
-        flake8 setup.py
+        flake8 src/analytics setup.py 
+    - name: Black
+      run: |
+        pip install black
+        black --check src/analytics setup.py 
