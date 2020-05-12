@@ -35,6 +35,8 @@ Install:
 $ pip install .
 ```
 
+For an example IPython notebook and files, go to `examples/`.
+
 To start stability settings app, run:
 ```bash
 $ R -f R/stability_settings/app.R
