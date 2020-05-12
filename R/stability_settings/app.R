@@ -13,7 +13,7 @@ library(scales)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
-    titlePanel("Merchant selector"),
+    titlePanel("Stability settings selector"),
 
     sidebarLayout(
         sidebarPanel(
@@ -89,7 +89,7 @@ server <- function(input, output, session) {
         if (is.null(in_file))
             return(NULL)
 
-        read.csv(in_file$datapath, sep = ";", dec = ",")
+        read.csv(in_file$datapath)
     })
 
     observeEvent(stats_table(), {
