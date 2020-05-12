@@ -95,7 +95,7 @@ class TimeSeriesAnalyzer:
         Create a summary of results with metadata
         :return Dataframe of metadata and issue indication
         """
-        return pd.DataFrame({**self.metadata, "ok": self.is_ok(),}, index=[0])
+        return pd.DataFrame({**self.metadata, "ok": self.is_ok()}, index=[0])
 
 
 def find_new_outliers(
