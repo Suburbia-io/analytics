@@ -1,7 +1,8 @@
 # Analytics tools for CPG datasets
 
 This repository incorporates several analytics tools used during processing
-of CPG datasets at Suburbia. They are separated into three different categories:
+of CPG (consumer packaged goods) datasets at Suburbia.
+They are separated into three different categories:
 
 ### Merchant stability
 Set of functions for classification of stable merchants based on four criteria:
