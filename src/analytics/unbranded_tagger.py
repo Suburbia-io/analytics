@@ -5,6 +5,7 @@ from typing import Iterable, List, Optional
 import numpy as np
 from scipy import sparse
 from sklearn.feature_extraction.text import CountVectorizer
+from itertools import chain
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +42,16 @@ def get_unbranded(
     logger.debug("transforming to_label")
     cv_to_label = CountVectorizer()
     to_label_tokens_matrix = cv_to_label.fit_transform(to_label)
-    to_label_token_count = np.array(to_label_tokens_matrix.sum(axis=1))[:, 0]
+    to_label_tokens = np.array(cv_to_label.get_feature_names())
 
     logger.debug("transforming unbranded")
     cv_unbranded = CountVectorizer()
     unbranded_tokens_matrix = cv_unbranded.fit_transform(unbranded)
     unbranded_row_count = np.array(unbranded_tokens_matrix.sum(axis=0))[0, :]
-    logger.debug(unbranded_row_count.shape)
+    unbranded_tokens = np.array(cv_unbranded.get_feature_names())
+    logger.debug("shape of unbranded row count:"+ str(unbranded_row_count.shape))
 
     logger.debug("matching")
-    to_label_tokens = np.array(cv_to_label.get_feature_names())
-    unbranded_tokens = np.array(cv_unbranded.get_feature_names())
     # only include tokens present in at least `min_unbranded_rows` fingerprints
     unbranded_tokens = unbranded_tokens[unbranded_row_count >= min_unbranded_rows]
 
@@ -67,32 +67,11 @@ def get_unbranded(
             ~np.isin(unbranded_tokens, tokens_to_exclude)
         ]
 
-    # create a matrix indicating matches between each pair
-    # of `to_label_tokens` and `unbranded_tokens`
-    logger.debug("creating filter matrix")
-    filter_matrix = create_indicator_matrix(to_label_tokens, unbranded_tokens)
+    logger.debug("filter columns")
+    branded_tokens_mask = ~np.isin(to_label_tokens, unbranded_tokens)
+    branded_row_counts = np.array(to_label_tokens_matrix[:, branded_tokens_mask].sum(axis=1))[:,0]
 
-    logger.debug(f"filter matrix size: {filter_matrix.shape}")
-    to_label_tokens_unbranded_matrix = to_label_tokens_matrix * filter_matrix
-    # number of unbranded tokens in each text from `to_label`
-    to_label_unbranded_token_count = np.array(
-        to_label_tokens_unbranded_matrix.sum(axis=1)
-    )[:, 0]
-
-    return to_label_token_count == to_label_unbranded_token_count
-
-
-def create_indicator_matrix(x: np.ndarray, y: np.ndarray,) -> sparse.csc_matrix:
-    """
-    Create a diagonal matrix indicating if elements of `x` are present in `y`
-
-    :param x: Array
-    :param y: Array of same type as x
-    :return: Sparse diagonal matrix of occurrences of `x` in `y`
-    """
-    matches = np.isin(x, y).astype(int)
-    return sparse.diags(matches).tocsc()
-
+    return(list(map(lambda x: x == 0, branded_row_counts)))
 
 def get_unique_tag_elements(tags: Iterable[str]) -> List[str]:
     """
@@ -102,7 +81,7 @@ def get_unique_tag_elements(tags: Iterable[str]) -> List[str]:
     :return: List of unique elements
     """
     tags_split = [b.split("-") for b in tags]
-    tags_split_flat = [item for sublist in tags_split for item in sublist]
+    tags_split_flat = chain.from_iterable(tags_split)
     return list(set(tags_split_flat))
 
 
@@ -116,9 +95,6 @@ def get_n_word_matches(texts: np.ndarray, words: np.ndarray) -> np.ndarray:
     """
     cv = CountVectorizer()
     texts_split = cv.fit_transform(texts)
+    word_matches = texts_split[:,np.isin(cv.get_feature_names(), words)].sum(axis=1).transpose()
 
-    filter_matrix = create_indicator_matrix(cv.get_feature_names(), np.array(words))
-    texts_with_words = texts_split * filter_matrix
-
-    word_matches = np.array(texts_with_words.sum(axis=1))[:, 0]
-    return word_matches
+    return np.array(word_matches)
