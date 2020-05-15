@@ -47,7 +47,7 @@ ui <- fluidPage(
                         max = 365,
                         value = 21),
 
-            width = 3,
+            width = 3
         ),
 
         # Show a plot of the generated distribution
@@ -62,7 +62,7 @@ ui <- fluidPage(
                     fluidRow(
                         column(4, plotOutput("lines_plot")),
                         column(4, plotOutput("activity_plot"), plotOutput("volatility_plot")),
-                        column(4, plotOutput("lifespan_plot"), plotOutput("longest_gap_plot")),
+                        column(4, plotOutput("lifespan_plot"), plotOutput("longest_gap_plot"))
                     ),
                     br(), br(),
                     downloadButton('download_data', 'Download results')
@@ -219,7 +219,7 @@ server <- function(input, output, session) {
 
         overall <- selection_stats_overall() %>%
             mutate(
-                vendor = "[all]",
+                vendor = "[all]"
             ) %>%
             filter(included == TRUE)
         by_vendor <- selection_stats_by_vendor() %>%
