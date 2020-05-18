@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 def get_merchant_stats(
-    daily_stats: pd.DataFrame, stability_settings: Optional[Dict[str, float]] = None,
+    daily_stats: pd.DataFrame,
+    stability_settings: Optional[Dict[str, float]] = None,
+    churned_after: int = 75,
 ) -> pd.DataFrame:
     """
     Get dataframe of stability-related statistics per merchant
@@ -18,6 +20,7 @@ def get_merchant_stats(
     :param daily_stats: Dataframe of daily aggregated merchant data (from BigQuery)
     :param stability_settings: Dictionary with arguments to override defaults
     of `compute_stable` (optional)
+    :param churned_after: Number of days after which a merchant is considered churned
     :return: Dataframe with statistics
     """
     stability_settings = stability_settings or {}
@@ -39,6 +42,7 @@ def get_merchant_stats(
         "first_day",
         "last_day",
         "stable",
+        "churned",
     ]
 
     return activity_stats.join(
@@ -46,6 +50,7 @@ def get_merchant_stats(
     ).assign(
         stable=lambda d: compute_stable(df=d, **stability_settings),
         merchant_id=utils.hash_merchant,
+        churned=lambda d: get_final_gap(d) > churned_after,
     )[
         cols_to_include
     ]
@@ -76,6 +81,7 @@ def make_stability_statistics(
                 "merchant",
                 "year",
                 "stable",
+                "churned",
                 "lifespan",
                 "activity",
                 "volatility",
@@ -184,7 +190,7 @@ def compute_volatility(daily_stats: pd.DataFrame, min_days: int = 100) -> pd.Dat
     return volatility
 
 
-def get_adjusted_longest_gap(df: pd.DataFrame) -> pd.Series:
+def get_final_gap(df: pd.DataFrame) -> pd.Series:
     """
     Compute longest period of inactivity, accounting for possible churn
 
@@ -192,8 +198,7 @@ def get_adjusted_longest_gap(df: pd.DataFrame) -> pd.Series:
     :return: Series of `longest_gap` values
     """
     dataset_last_day = df["last_day"].max()
-    gap_at_the_end = (dataset_last_day - df["last_day"]).dt.days
-    return df["longest_gap"].clip(lower=gap_at_the_end)
+    return (dataset_last_day - df["last_day"]).dt.days
 
 
 def compute_stable(
@@ -215,7 +220,7 @@ def compute_stable(
     :return: Numpy array of booleans indicating stability
     """
 
-    adjusted_longest_gap = get_adjusted_longest_gap(df)
+    adjusted_longest_gap = df["longest_gap"].clip(lower=get_final_gap(df))
     return (
         (df["lifespan"] >= minimum_lifespan)
         & (df["activity"] >= minimum_activity)
