@@ -1,11 +1,10 @@
 import logging
 import re
+from itertools import chain
 from typing import Iterable, List, Optional
 
 import numpy as np
-from scipy import sparse
 from sklearn.feature_extraction.text import CountVectorizer
-from itertools import chain
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ def get_unbranded(
     unbranded_tokens_matrix = cv_unbranded.fit_transform(unbranded)
     unbranded_row_count = np.array(unbranded_tokens_matrix.sum(axis=0))[0, :]
     unbranded_tokens = np.array(cv_unbranded.get_feature_names())
-    logger.debug("shape of unbranded row count:"+ str(unbranded_row_count.shape))
+    logger.debug(f"shape of unbranded row count: {unbranded_row_count.shape}")
 
     logger.debug("matching")
     # only include tokens present in at least `min_unbranded_rows` fingerprints
@@ -69,9 +68,12 @@ def get_unbranded(
 
     logger.debug("filter columns")
     branded_tokens_mask = ~np.isin(to_label_tokens, unbranded_tokens)
-    branded_row_counts = np.array(to_label_tokens_matrix[:, branded_tokens_mask].sum(axis=1))[:,0]
+    branded_row_counts = np.array(
+        to_label_tokens_matrix[:, branded_tokens_mask].sum(axis=1)
+    )[:, 0]
 
-    return(list(map(lambda x: x == 0, branded_row_counts)))
+    return branded_row_counts == 0
+
 
 def get_unique_tag_elements(tags: Iterable[str]) -> List[str]:
     """
@@ -95,6 +97,8 @@ def get_n_word_matches(texts: np.ndarray, words: np.ndarray) -> np.ndarray:
     """
     cv = CountVectorizer()
     texts_split = cv.fit_transform(texts)
-    word_matches = texts_split[:,np.isin(cv.get_feature_names(), words)].sum(axis=1).transpose()
+    word_matches = (
+        texts_split[:, np.isin(cv.get_feature_names(), words)].sum(axis=1).transpose()
+    )
 
     return np.array(word_matches)
