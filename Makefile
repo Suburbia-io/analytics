@@ -12,7 +12,7 @@ develop:
 
 format:
 	black src/analytics setup.py
-	isort src/analytics setup.py
+	isort src/analytics/*.py setup.py
 
 check:
 	black --check src/analytics setup.py
