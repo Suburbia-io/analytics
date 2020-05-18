@@ -20,9 +20,17 @@ Thresholds can be chosen using an associated _Stability settings_ Shiny app.
 Tools for detection of outliers in a set of specified metrics,
 based on [Prophet](https://facebook.github.io/prophet/).
 
+We fit a time series model for each metric we are interested in, using data
+up until a reference date. All values collected after the reference date will
+be then compared with predicted values. If observed value is outside of predicted
+interval or is missing, the algorithm labels it as such.
+
 For each time series, we provide an indication of correctness,
 a chart of actual values together with a predicted interval, and a summary
 of problematic dates.
+
+Next time the outlier detection is run, user can choose to exclude certain
+problematic dates to prevent the model from training on this data.
 
 ### Unbranded tagger
 An algorithm for tagging new line items as "unbranded" given a list of items
