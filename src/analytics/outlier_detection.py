@@ -203,24 +203,6 @@ def get_deviations(predictions, actuals, interval_multiplier=1.5):
     )
 
 
-def get_last_reliable_date(data):
-    """
-    Find last date in dataset we can reliably check for
-
-    Since data suppliers don't deliver all data at once, we adjust
-    the checks to account for it. Namely, if data from Goat is in the dataset,
-    we will only check deviations until two days before day we received data
-    from them.
-    :param data: Full input dataframe
-    :return: Latest date to check
-    """
-    goat_data = data.loc[lambda d: (d["dimension"] == "vendor") & (d["item"] == "goat")]
-    if len(goat_data) > 0:
-        return goat_data["ds"].max() - timedelta(days=2)
-    else:
-        return data["ds"].max()
-
-
 def prepare(data, reference_date, dates_to_exclude):
     """
     Split data into training and prediction set
@@ -239,9 +221,7 @@ def prepare(data, reference_date, dates_to_exclude):
         & ~d["ds"].isin(dates_to_exclude)
         & (d["ds"] >= reference_date - timedelta(days=365))
     ]
-    last_reliable_date = get_last_reliable_date(
-        data.loc[lambda d: d["ds"] >= reference_date]
-    )
+    last_reliable_date = data.loc[lambda d: d["ds"] >= reference_date]["ds"].max()
     new_data = data.loc[lambda d: d["ds"].between(reference_date, last_reliable_date)]
 
     return old_data, new_data
@@ -280,7 +260,7 @@ def create_daterange_df(new_data, date_column="ds"):
 
 
 def slice_prophet(
-    data, dimension="vendor", item="goat", metric="n_lines",
+    data, dimension, item, metric,
 ):
     """
     Slice data and transform to format used by Prophet
