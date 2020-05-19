@@ -29,6 +29,12 @@ def get_merchant_stats(
     activity_stats = compute_activity_stats(daily_stats)
     volatility = compute_volatility(daily_stats)
 
+    if (
+        "maximum_gap" in stability_settings.keys()
+        and stability_settings["maximum_gap"] > churned_after
+    ):
+        raise ValueError("Maximum gap is higher than churn threshold!")
+
     cols_to_include = [
         "vendor",
         "merchant",
