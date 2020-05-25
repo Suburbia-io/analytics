@@ -1,5 +1,6 @@
 from datetime import timedelta
 from multiprocessing import Pool
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -31,8 +32,13 @@ class TimeSeriesAnalyzer:
     """
 
     def __init__(
-        self, old_data, new_data, new_daterange, metadata, interval_multiplier=1.5
-    ):
+        self,
+        old_data: pd.DataFrame,
+        new_data: pd.DataFrame,
+        new_daterange: pd.DataFrame,
+        metadata: Dict[str, str],
+        interval_multiplier: float = 1.5,
+    ) -> None:
         self.old_data = old_data
         self.new_data = new_data
         self.new_daterange = new_daterange
@@ -41,7 +47,7 @@ class TimeSeriesAnalyzer:
         self.model = None
         self.deviations = None
 
-    def find_deviations(self):
+    def find_deviations(self) -> None:
         """
         Fit model and generate deviations Dataframe
         """
@@ -51,14 +57,14 @@ class TimeSeriesAnalyzer:
             predictions, self.new_data, self.interval_multiplier
         )
 
-    def check_deviations(self):
+    def check_deviations(self) -> None:
         """
         Check if deviations Dataframe is computed
         """
         if not isinstance(self.deviations, pd.DataFrame):
             raise ValueError("Deviations not computed")
 
-    def make_chart(self):
+    def make_chart(self) -> plt.Figure:
         """
         Visualize deviations in a chart
 
@@ -69,7 +75,7 @@ class TimeSeriesAnalyzer:
             self.old_data, self.new_data, self.deviations, self.metadata
         )
 
-    def get_filtered_deviations(self):
+    def get_filtered_deviations(self) -> pd.DataFrame:
         """
         Filter deviations -- only keep problematic dates
 
@@ -80,7 +86,7 @@ class TimeSeriesAnalyzer:
             **self.metadata
         )[["ds", "metric", "dimension", "item", "status"]]
 
-    def is_ok(self):
+    def is_ok(self) -> bool:
         """
         Indicate if issues were found for any date
 
@@ -90,7 +96,7 @@ class TimeSeriesAnalyzer:
         n_lines_with_issues = len(self.deviations.loc[lambda d: d["status"] != "ok"])
         return n_lines_with_issues == 0
 
-    def get_summary(self):
+    def get_summary(self) -> pd.DataFrame:
         """
         Create a summary of results with metadata
         :return Dataframe of metadata and issue indication
@@ -99,8 +105,12 @@ class TimeSeriesAnalyzer:
 
 
 def find_new_outliers(
-    data, reference_date, metrics, dimensions_items, dates_to_exclude=None,
-):
+    data: pd.DataFrame,
+    reference_date: str,
+    metrics: List[str],
+    dimensions_items: Dict[str, str],
+    dates_to_exclude: Optional[List[str]] = None,
+) -> List[TimeSeriesAnalyzer]:
     """
     Find outliers for selected metrics and dimensions/items
 
@@ -112,7 +122,7 @@ def find_new_outliers(
     provided in a dictionary where keys are dimensions and values are lists of items
     :param dates_to_exclude: List of dates to exclude from training, optional.
     Use this if dataset still includes period of incorrect data.
-    :return: Dataframe of problematic observations.
+    :return: List of fit TimeSeriesAnalyzers
     """
     dates_to_exclude = dates_to_exclude or []
     old_data, new_data = prepare(data, reference_date, dates_to_exclude)
@@ -140,7 +150,9 @@ def find_new_outliers(
     return analyzers
 
 
-def _get_fit_analyzer(x):
+def _get_fit_analyzer(
+    x: Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict[str, str]]
+) -> TimeSeriesAnalyzer:
     """
     Helper function for initializing and fitting TimeSeriesAnalyzer objects
 
@@ -151,7 +163,7 @@ def _get_fit_analyzer(x):
     return a
 
 
-def make_model(training_data):
+def make_model(training_data: pd.DataFrame) -> Prophet:
     """
     Initialize and train Prophet model using training data
 
@@ -168,7 +180,9 @@ def make_model(training_data):
     return m
 
 
-def get_deviations(predictions, actuals, interval_multiplier=1.5):
+def get_deviations(
+    predictions: pd.DataFrame, actuals: pd.DataFrame, interval_multiplier: float = 1.5
+) -> pd.DataFrame:
     """
     Compute deviations of actuals from forecasts
 
@@ -180,10 +194,10 @@ def get_deviations(predictions, actuals, interval_multiplier=1.5):
     (`ok`, `missing`, `above`, `below`).
     """
 
-    def get_adjusted_bound(x, x_bound):
+    def get_adjusted_bound(x: pd.Series, x_bound: pd.Series) -> pd.Series:
         return x + (x_bound - x) * interval_multiplier
 
-    def get_status(d):
+    def get_status(d: pd.Series) -> np.ndarray:
         return np.where(
             d["y"].isna(),
             "missing",
@@ -203,7 +217,9 @@ def get_deviations(predictions, actuals, interval_multiplier=1.5):
     )
 
 
-def prepare(data, reference_date, dates_to_exclude):
+def prepare(
+    data: pd.DataFrame, reference_date: str, dates_to_exclude: List[str]
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Split data into training and prediction set
 
@@ -227,7 +243,7 @@ def prepare(data, reference_date, dates_to_exclude):
     return old_data, new_data
 
 
-def subset_exists(data, metric, dimension, item):
+def subset_exists(data: pd.DataFrame, metric: str, dimension: str, item: str) -> bool:
     """
     Check if subset of selected parameters exists in given table
     :param data: Dataframe
@@ -243,7 +259,9 @@ def subset_exists(data, metric, dimension, item):
     )
 
 
-def create_daterange_df(new_data, date_column="ds"):
+def create_daterange_df(
+    new_data: pd.DataFrame, date_column: str = "ds"
+) -> pd.DataFrame:
     """
     Create a Dataframe with a date range covering whole period
     :param new_data: Prediction Dataframe
@@ -260,8 +278,8 @@ def create_daterange_df(new_data, date_column="ds"):
 
 
 def slice_prophet(
-    data, dimension, item, metric,
-):
+    data: pd.DataFrame, dimension: str, item: str, metric: str,
+) -> pd.DataFrame:
     """
     Slice data and transform to format used by Prophet
 
@@ -276,7 +294,12 @@ def slice_prophet(
     ]
 
 
-def create_chart(old_data, new_data, deviations, metadata):
+def create_chart(
+    old_data: pd.DataFrame,
+    new_data: pd.DataFrame,
+    deviations: pd.DataFrame,
+    metadata: Dict[str, str],
+) -> plt.Figure:
     """
     Create chart of deviations given training data, test data and predictions
 
