@@ -7,6 +7,7 @@ We used a pipeline developed in go for this.
 
 """
 import re
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -16,8 +17,10 @@ from scipy import stats
 
 from .utils import ceil_int, normalize
 
+DictList = List[Dict[str, Union[str, List[Tuple[str, float]]]]]
 
-def get_example_merchants() -> list:
+
+def get_example_merchants() -> DictList:
     """
     Return example merchant information as obtained from POS systems.
 
@@ -85,7 +88,7 @@ def get_example_merchants() -> list:
     ]
 
 
-def get_example_category_map() -> dict:
+def get_example_category_map() -> Dict[str, str]:
     """
     Return example category mapping based on simple regex.
 
@@ -107,7 +110,7 @@ def get_example_category_map() -> dict:
     }
 
 
-def get_example_brand_map() -> dict:
+def get_example_brand_map() -> Dict[str, str]:
     """
     Return example brand mapping based on simple regex.
 
@@ -133,7 +136,7 @@ def get_example_brand_map() -> dict:
     }
 
 
-def expand_column(df: pd.DataFrame, col: str, names: list = None) -> pd.DataFrame:
+def expand_column(df: pd.DataFrame, col: str, names: List[str] = None) -> pd.DataFrame:
     """
     Expand a DataFrame column containing lists to multiple columns.
 
@@ -153,13 +156,13 @@ def expand_column(df: pd.DataFrame, col: str, names: list = None) -> pd.DataFram
     return df.join(expanded).drop(columns=col)
 
 
-def create_merchants_df(merchants: dict) -> pd.DataFrame:
+def create_merchants_df(merchants: DictList) -> pd.DataFrame:
     """
     Create a dataframe based on a merchant information dictionary.
 
     Creates a row per menu item  with price and all other merchant information.
 
-    :param merchants: a dictionary of merchant information the structure is
+    :param merchants: a list of dicts of merchant information the structure is
         described in the get_example_merchants() method.
     :returns: pandas DataFrame containing the same information as the input,
         structured as one item per row.
@@ -385,7 +388,7 @@ def generate_date_merch_ids(df: pd.DataFrame) -> pd.Series:
         np.arange(1 + len(df) // avg_items_per_receipt), size=len(df)
     )
     date_merch = "_".join([str(dm) for dm in df.name])
-    return date_merch + pd.Series(ids).astype(str)
+    return pd.Series(ids).astype(str) + date_merch
 
 
 def generate_receipt_ids(df: pd.DataFrame) -> np.ndarray:
@@ -400,13 +403,14 @@ def generate_receipt_ids(df: pd.DataFrame) -> np.ndarray:
     return np.hstack(receipt_ids)
 
 
-def create_cpg_input_df(merchants: dict, days: int = 30) -> pd.DataFrame:
+def create_cpg_input_df(merchants: DictList, days: int = 30) -> pd.DataFrame:
     """
     Create a DataFrame similar to input data seen in Suburbia's cpg-data.
 
     The input data is generated using all methods described above.
 
-    :param merchants: a dictonary as created in get_example_merchants()
+    :param merchants: a list of dicts as created in get_example_merchants()
+    :param days: integer with the number of days that should be simulated.
     :returns: a DataFrame with simulated suburbia input data, with columns:
         "date", "reporting_date", "batch", "data_source", "merchant",
         "location", "receipt_id", "line_id", "item", "unit_price", "quantity",
@@ -447,7 +451,7 @@ def create_cpg_input_df(merchants: dict, days: int = 30) -> pd.DataFrame:
     )
 
 
-def expand_map(compact_map: dict, all_items: np.ndarray) -> dict:
+def expand_map(compact_map: Dict[str, str], all_items: np.ndarray) -> Dict[str, str]:
     """
     Expand a compact representation of a mapping to an expanded version.
 
@@ -464,7 +468,9 @@ def expand_map(compact_map: dict, all_items: np.ndarray) -> dict:
 
 
 def clean_data(
-    df: pd.DataFrame, expanded_cat_map: dict, expanded_brand_map: dict
+    df: pd.DataFrame,
+    expanded_cat_map: Dict[str, str],
+    expanded_brand_map: Dict[str, str],
 ) -> pd.DataFrame:
     """
     Clean input data by mapping items to their mapped values.
@@ -474,7 +480,6 @@ def clean_data(
         from expand_map()
     :param expanded_brand_map: an expanded mapping for brands as obtained from
         expand_map()
-    :param all_items: a numpy ndarray with all unique items to be mapped
     :returns: a DataFrame with 2 extra columns "category" and "brand" where
         all_items are mapped to their mapped "category" and "brand" value
     """
@@ -485,7 +490,10 @@ def clean_data(
 
 
 def create_cpg_df(
-    merchants: dict, compact_cat_map: dict, compact_brand_map: dict, days: int = 30,
+    merchants: DictList,
+    compact_cat_map: Dict[str, str],
+    compact_brand_map: Dict[str, str],
+    days: int = 30,
 ) -> pd.DataFrame:
     """
     Create a DataFrame similar to final data seen in Suburbia's cpg-data.
@@ -493,11 +501,12 @@ def create_cpg_df(
     This will produce the simulated enriched dataset, including simulating
     input data and cleaning that data.
 
-    :param merchants: a dictonary as created in get_example_merchants()
+    :param merchants: a list of dicts as created in get_example_merchants()
     :param compact_cat_map: a dictonary as created in get_example_cat_map()
         with a mapping from items to categories.
     :param compact_brand_map: a dictonary as created in get_example_brand_map()
         with a mapping from items to brands.
+    :param days: integer with the number of days that should be simulated.
     :returns: a DataFrame with simulated suburbia enriched data, with columns:
         "date", "reporting_date", "batch", "data_source", "merchant",
         "location", "receipt_id", "line_id", "item", "unit_price", "quantity",
@@ -584,7 +593,9 @@ def problem4(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def aggregate(
-    df: pd.DataFrame, groupby: list = None, dims: list = None
+    df: pd.DataFrame,
+    groupby: Optional[List[str]] = None,
+    dims: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """
     Aggregate data Suburbia CPG data in long format for plotting in seaborn.
@@ -617,7 +628,11 @@ def aggregate(
     )
 
 
-def plot_data(df: pd.DataFrame, groupby: list = None, dims: list = None) -> None:
+def plot_data(
+    df: pd.DataFrame,
+    groupby: Optional[List[str]] = None,
+    dims: Optional[List[str]] = None,
+) -> None:
     """
     Plot the requested data from a suburbia cleaned or input DataFrame.
 
