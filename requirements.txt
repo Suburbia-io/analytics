@@ -1,8 +1,7 @@
-numpy
-pandas
-click
-click_pathlib
 fbprophet
 matplotlib
-scipy
+numpy
+pandas
 scikit-learn
+scipy
+seaborn

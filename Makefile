@@ -1,8 +1,8 @@
 clean:
-	rm -rf .ipynb_checkpoints
-	rm -rf */.ipynb_checkpoints
+	rm -rf .ipynb_checkpoints */.ipynb_checkpoints src/analytics/.ipynb_checkpoints
 	rm -rf src/analytics.egg-info
 	rm -rf .mypy_cache .pytest_cache
+	rm -rf build
 
 install:
 	pip install .
