@@ -11,4 +11,5 @@ setup(
     entry_points={},
     author="Ondrej",
     long_description_content_type="text/markdown",
+    license="MIT",
 )
