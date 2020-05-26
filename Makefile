@@ -2,6 +2,7 @@ clean:
 	rm -rf .ipynb_checkpoints
 	rm -rf */.ipynb_checkpoints
 	rm -rf src/analytics.egg-info
+	rm -rf .mypy_cache .pytest_cache
 
 install:
 	pip install .
@@ -17,3 +18,6 @@ format:
 check:
 	black --check src/analytics setup.py
 	flake8 src/analytics setup.py
+
+test:
+	pytest --nbval example
