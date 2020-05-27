@@ -620,6 +620,9 @@ def aggregate(
     """
     groupby = groupby or ["date"]
     dims = dims or ["rows"]
+    df = df.copy()
+    for group in groupby:
+        df[group] = df[group].astype("category")
     return (
         df.groupby(groupby)
         .agg(
@@ -627,6 +630,7 @@ def aggregate(
             volume_eur=("volume_eur", "sum"),
             quantity=("quantity", "sum"),
         )
+        .fillna(0)
         .reset_index()
         .melt(id_vars=groupby, value_vars=dims, var_name="dim",)
     )
