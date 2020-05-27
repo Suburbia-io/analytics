@@ -9,7 +9,7 @@ setup(
     extras_require={"dev": open("requirements-dev.txt").readlines()},
     description="Analytics tools for CPG datasets",
     entry_points={},
-    author="Ondrej",
+    author="Ondrej Zacha & Bart Buter",
     long_description_content_type="text/markdown",
     license="MIT",
 )
