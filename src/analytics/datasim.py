@@ -269,15 +269,20 @@ def create_total_sales_df(index: int, days: int) -> pd.DataFrame:
 
     :param index: integer indicating a unique menue item sold by a merchant
     :param days: integer with the number of days that should be returned.
-    :returns: pandas DataFrame with simulated daily total sales, and the dates.
+    :returns: pandas DataFrame with simulated daily total sales, and the dates
+        for days where the total_sales > 0.
     """
-    return pd.DataFrame(
-        {
-            "index": index,
-            "date": np.arange(days),
-            "total_sales": generate_total_sales(days),
-        }
-    ).set_index("index")
+    return (
+        pd.DataFrame(
+            {
+                "index": index,
+                "date": np.arange(days),
+                "total_sales": generate_total_sales(days),
+            }
+        )
+        .set_index("index")
+        .loc[lambda d: d["total_sales"] > 0]
+    )
 
 
 def add_all_total_sales(df: pd.DataFrame, days: int) -> pd.DataFrame:
@@ -388,18 +393,23 @@ def generate_date_merch_ids(df: pd.DataFrame) -> pd.Series:
         np.arange(1 + len(df) // avg_items_per_receipt), size=len(df)
     )
     date_merch = "_".join([str(dm) for dm in df.name])
-    return pd.Series(ids).astype(str) + date_merch
+    return date_merch + "_" + pd.Series(ids).astype(str)
 
 
 def generate_receipt_ids(df: pd.DataFrame) -> np.ndarray:
     """
     Combine generated receipt ids per merchant, date.
 
+    We can select any column to pass to the generate method since only the
+    length of the column will be used.
+
     :param df: pandas DataFrame as created using add_all_quantities(),
         minimally with columns "merchant" and "date"
     :returns: numpy ndarray with unique ids stacked for all merchants and days.
     """
-    receipt_ids = df.groupby(["date", "merchant"]).apply(generate_date_merch_ids)
+    receipt_ids = df.groupby(["date", "merchant"])["date"].transform(
+        generate_date_merch_ids
+    )
     return np.hstack(receipt_ids)
 
 
@@ -407,7 +417,12 @@ def create_cpg_input_df(merchants: DictList, days: int = 30) -> pd.DataFrame:
     """
     Create a DataFrame similar to input data seen in Suburbia's cpg-data.
 
-    The input data is generated using all methods described above.
+    The input data is generated using all methods described above. Columns that
+    are not described in previous methods hsa the following meaning:
+    - volume_eur = quantity * price_eur
+    - reporting_data = date at which data is delivered for processing
+    - batch = the data that the data is processed in a batch
+    - line_id = a unique id for a line
 
     :param merchants: a list of dicts as created in get_example_merchants()
     :param days: integer with the number of days that should be simulated.
@@ -420,19 +435,17 @@ def create_cpg_input_df(merchants: DictList, days: int = 30) -> pd.DataFrame:
         create_merchants_df(merchants)
         .pipe(add_all_total_sales, days=days)  # add daily item sales
         .pipe(add_all_quantities)  # add individual quantities
-        .reset_index(drop=True)
         .assign(
             volume_eur=lambda d: d["unit_price"] * d["quantity"],
             reporting_date=lambda d: d["date"]
-            + np.round(np.random.exponential(1)).astype(int),
+            + 1
+            + +np.round(np.random.exponential(1)).astype(int),
             batch=lambda d: d["reporting_date"]
             .map(lambda x: ceil_int(x, 7))
             .astype(int),
             receipt_id=generate_receipt_ids,
             line_id=lambda d: d.index,
-        )
-        .sort_values(by=["date", "data_source", "merchant", "line_id"])
-        .reset_index(drop=True)[
+        )[
             [
                 "date",
                 "reporting_date",
@@ -536,9 +549,7 @@ def problem1(df: pd.DataFrame) -> pd.DataFrame:
     batches = df["batch"].unique()
     return df.assign(
         item=lambda d: np.where(
-            d["batch"].isin(np.random.choice(batches)),
-            d["item"].str.upper(),
-            d["item"],
+            d["batch"] == np.random.choice(batches), d["item"].str.upper(), d["item"],
         )
     )
 
