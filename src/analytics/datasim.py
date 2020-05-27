@@ -546,11 +546,8 @@ def problem1(df: pd.DataFrame) -> pd.DataFrame:
     :returns: a Dataframe similar to create_cpg_input_df() with a data-problem
 
     """
-    batches = df["batch"].unique()
     return df.assign(
-        item=lambda d: np.where(
-            d["batch"] == np.random.choice(batches), d["item"].str.upper(), d["item"],
-        )
+        item=lambda d: np.where(d["batch"] == 14, d["item"].str.upper(), d["item"],)
     )
 
 
@@ -564,15 +561,10 @@ def problem2(df: pd.DataFrame) -> pd.DataFrame:
     :returns: a Dataframe similar to create_cpg_input_df() with a data-problem
 
     """
-    batches = df["batch"].unique()
-    return df.loc[
-        lambda d: ~(
-            d["batch"].isin(np.random.choice(batches) & (d["location"] == "BE"))
-        )
-    ]
+    return df.loc[lambda d: ~((d["batch"] == 21) & (d["location"] == "BE"))]
 
 
-def problem3(df: pd.DataFrame) -> pd.DataFrame:
+def problem3(df: pd.DataFrame, batch: int = None) -> pd.DataFrame:
     """
     Create a simulated problem (3) with the input data.
 
@@ -582,10 +574,11 @@ def problem3(df: pd.DataFrame) -> pd.DataFrame:
     :returns: a Dataframe similar to create_cpg_input_df() with a data-problem
 
     """
+    batch = batch or 7
     batches = df["batch"].unique()
-    return df.assign(
-        batch=lambda d: np.where(
-            d["batch"].isin(np.random.choice(batches)), batches.max() + 7, d["batch"],
+    return df.append(
+        df[(df["batch"] == batch) & (df["data_source"] == "A")].assign(
+            batch=batches.max() + 7
         )
     )
 
@@ -600,7 +593,7 @@ def problem4(df: pd.DataFrame) -> pd.DataFrame:
     :returns: a Dataframe similar to create_cpg_input_df() with a data-problem
 
     """
-    return problem3(df).reset_index().assign(line_id=lambda d: d.index)
+    return problem3(df, 28).reset_index().assign(line_id=lambda d: d.index)
 
 
 def aggregate(
