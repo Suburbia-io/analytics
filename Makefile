@@ -20,4 +20,4 @@ check:
 	flake8 src/analytics setup.py
 
 test:
-	pytest --nbval example
+	pytest --nbval notebooks

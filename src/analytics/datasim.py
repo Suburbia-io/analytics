@@ -22,7 +22,7 @@ DictList = List[Dict[str, Union[str, List[Tuple[str, float]]]]]
 
 def get_example_merchants() -> DictList:
     """
-    Return example merchant information as obtained from POS systems.
+    Return notebooks merchant information as obtained from POS systems.
 
     Example data from Point-of-Sales sytems used in bars and restaurants about
     the merchants (the actual bars and restaurants) and their menu items.
@@ -36,7 +36,7 @@ def get_example_merchants() -> DictList:
     items: a list of tuples with (menu_item, price)
 
 
-    :returns: dictionary with example POS data
+    :returns: dictionary with notebooks POS data
     """
     return [
         {
@@ -90,14 +90,14 @@ def get_example_merchants() -> DictList:
 
 def get_example_category_map() -> Dict[str, str]:
     """
-    Return example category mapping based on simple regex.
+    Return notebooks category mapping based on simple regex.
 
     The mapping is from patterns found in menu_items to a category.
     The returned dictionary {key, value} has the following structure:
     key is the regex search pattern
     value is the value this pattern is mapped to
 
-    :returns: dictionary with example category mapping
+    :returns: dictionary with notebooks category mapping
     """
     return {
         "bier": "drinks/beer",
@@ -112,14 +112,14 @@ def get_example_category_map() -> Dict[str, str]:
 
 def get_example_brand_map() -> Dict[str, str]:
     """
-    Return example brand mapping based on simple regex.
+    Return notebooks brand mapping based on simple regex.
 
     The mapping is from patterns found in menu_items to the items brand.
     The returned dictionary {key, value} has the following structure:
     key is the regex search pattern
     value is the value this pattern is mapped to
 
-    :returns: dictionary with example brand mapping
+    :returns: dictionary with notebooks brand mapping
     """
     return {
         "heineken": "heineken",
