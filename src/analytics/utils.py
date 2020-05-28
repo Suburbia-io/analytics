@@ -1,7 +1,6 @@
 """Various simple functions used throughout the package."""
 import hashlib
 import logging
-import math
 
 import numpy as np
 import pandas as pd
