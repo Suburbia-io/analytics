@@ -45,7 +45,7 @@ def normalize(arr: np.ndarray) -> np.ndarray:
     """
     Scale input to the range [0,1].
 
-    :param a: an array of floats or integers
+    :param arr: an array of floats or integers
     :returns: all values in the original array scaled to [0,1]
     """
     if max(arr) - min(arr) == 0:
@@ -72,7 +72,7 @@ def floor_int(i: int, base: int) -> int:
     Round int i down to the nearest multiple of "base".
 
     :param i: an integer
-    :param base: the base to which the interger is rounded
+    :param base: the base to which the integer is rounded
     :returns: i rounded down to base
     """
     return (i // base) * base if i > 0 else (i + 1) // base * base - base

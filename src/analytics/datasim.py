@@ -439,7 +439,7 @@ def create_cpg_input_df(merchants: DictList, days: int = 30) -> pd.DataFrame:
             volume_eur=lambda d: d["unit_price"] * d["quantity"],
             reporting_date=lambda d: d["date"]
             + 1
-            + +np.round(np.random.exponential(1)).astype(int),
+            + np.round(np.random.exponential(1)).astype(int),
             batch=lambda d: d["reporting_date"]
             .map(lambda x: ceil_int(x, 7))
             .astype(int),
