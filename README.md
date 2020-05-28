@@ -1,8 +1,9 @@
 # Analytics tools for CPG datasets
 
 This repository incorporates several analytics tools used during processing
-of CPG (consumer packaged goods) datasets at Suburbia.
-They are separated into three different categories:
+of CPG (consumer packaged goods) datasets at Suburbia as well as notebooks
+demonstrating their usage at Suburbia.
+They are separated into four different categories:
 
 ### Merchant stability
 Set of functions for classification of stable merchants based on four criteria:
@@ -36,6 +37,10 @@ problematic dates to prevent the model from training on this data.
 An algorithm for tagging new line items as "unbranded" given a list of items
 that have already been tagged as "unbranded".
 
+### Data simulation
+Tools for simulation of data for demonstration of data processing at Suburbia,
+available through example Jupyter notebook `notebooks/Data-Science at Suburbia.ipynb`.
+
 ---
 #### Usage
 Install:
@@ -44,9 +49,9 @@ Install:
 $ pip install .
 ```
 
-For an example IPython notebook and files, go to `example/`.
+For an IPython notebooks and example files, go to `notebooks/`.
 
-To start stability settings app, run:
+To start Stability settings app, run:
 ```bash
 $ R -f R/stability_settings/app.R
 ```
