@@ -49,7 +49,7 @@ Install:
 $ pip install .
 ```
 
-For an IPython notebooks and example files, go to `notebooks/`.
+For an IPython notebook and example files, go to `notebooks/`.
 
 To start Stability settings app, run:
 ```bash
